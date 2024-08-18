@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Function to check if jq is installed
+# Function to check if jq is installed. jq is used to easily read in JSON files.
 check_jq() {
     if ! command -v jq &> /dev/null; then
         echo "jq is not installed and required to run this script."

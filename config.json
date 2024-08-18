@@ -1,0 +1,48 @@
+{
+    "run_mode":{
+    "test":false,
+    "test_mode_discovered_devices":20
+    },
+    "network_ranges": [
+        "192.168.1.0/24",
+        "192.168.2.0/24"
+    ],
+    "analysis_variables":{
+        "always_on_device_to_monitor":"some-device-ip",
+        "always_on_device_to_monitor_threshold":".1",
+        "records_to_look_back":10,
+        "public_internet_threshold":2,
+        "threshold_percent": ".90"
+    },
+    "public_addresses": {
+        "address_1":"8.8.8.8",
+        "address_2":"8.8.4.4",
+        "address_3":"1.1.1.1",
+        "address_4":"1.0.0.1",
+        "address_5":"google.com",
+        "address_6":"one.one.one.one"
+    },
+    "host_server":{
+        "hostname":"some-hostname",
+        "server_ip":"some-server-ip",
+        "username":"some-username",
+        "password":"some-password",
+        "rsa_path":"path-to-rsa-file"
+    },
+    "synology_servers":{
+        "synology_server_1":{
+            "server_ip":"some-server-ip",
+            "username":"some-username",
+            "password":"some-password"
+        }
+    },
+    "linux_servers":{
+        "heartbeat_server":{
+            "hostname":"some-hostname",
+            "server_ip":"some-server-ip",
+            "username":"some-username",
+            "password":"some-password",
+            "rsa_path":"path-to-rsa-file"
+        }
+    }
+}

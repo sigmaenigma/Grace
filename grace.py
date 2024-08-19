@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import os
 import time
 import json
@@ -8,6 +9,9 @@ import logging
 from logging.handlers import RotatingFileHandler
 import requests
 import math
+
+__author__ = "Adrian Sanabria-Diaz"
+__license__ = "MIT"
 
 # Create a logger
 logger = logging.getLogger('grace_logger')
@@ -25,6 +29,7 @@ handler.setFormatter(formatter)
 logger.addHandler(handler)
 
 def initialize():
+    """ Returns the configuration file to be used by different functions """
     try:
         global c
         filename = 'config.json'
@@ -38,6 +43,7 @@ def initialize():
         print(exc_msg)
 
 def run_get_request(ip):
+    """ Runs a GET request against a known IP and returns a True if the HTTP Status Code is 200 """
     try:
         http_url = "https://" + ip.replace("'",'')
         r = requests.get(http_url)
@@ -54,6 +60,7 @@ def run_get_request(ip):
         return False
 
 def save_network_device_history_to_disk():
+    """ Store the number of IP addresses discovered on the LAN using the nmap script in the bash file """
     try:
         test_mode = c["run_mode"]["test"]
         if test_mode == True:
@@ -81,6 +88,7 @@ def save_network_device_history_to_disk():
         print(exc_msg)
 
 def ssh_and_shutdown(host, username, sudo_password, rsa_path):
+    """ Log into a server via SSH and shut it down """
     try:
         logger.critical(f"Shutting down server {host}")
         print(f'SSHing into {host} with username {username}')
@@ -107,6 +115,7 @@ def ssh_and_shutdown(host, username, sudo_password, rsa_path):
         logger.info(f'Logging out host {host} was successful')
 
 def synology_login_payload(nas_ip, username, password):
+    """ Returns the Synology Session ID using the username & password for a specific Synology server """
     try:
         # Login to get a session ID
         login_url = f'https://{nas_ip}:5000/webapi/auth.cgi'
@@ -128,6 +137,7 @@ def synology_login_payload(nas_ip, username, password):
         print(f'An issue occured with synology_login_payload(): {e}')
 
 def shutdown_synology_server(nas_ip, username, password):
+    """ Shuts down the Synology Server using the Synology API """
     try:
         sid = synology_login_payload(nas_ip, username, password)
         # Shutdown command
@@ -142,7 +152,8 @@ def shutdown_synology_server(nas_ip, username, password):
     except Exception as e:
         print(f'An issue occured attempting to shutdown the synology server: {e}')
 
-def ssh_login(host, username, rsa_path, password):
+def ssh_login(host, username, rsa_path):
+    """ Atttempts to log in via SSH to a known host. If the connection is successful, a True is returned """
     try:
         ips = ips = list([host]*10)
         if check_if_ips_reachable(ips, threshold=.1, mode='ICMP'):
@@ -175,8 +186,7 @@ def check_of_ssh_device_available():
         host = c["linux_servers"]["heartbeat_server"]["server_ip"]    # IP of the device to SSH into
         username = c["linux_servers"]["heartbeat_server"]["username"]
         rsa_path = c["linux_servers"]["heartbeat_server"]["rsa_path"]
-        password = c["linux_servers"]["heartbeat_server"]["password"]
-        ssh_heartbeat_server = ssh_login(host, username, rsa_path, password)
+        ssh_heartbeat_server = ssh_login(host, username, rsa_path)
         if ssh_heartbeat_server == True:
             return 'Online'
         else:
@@ -202,7 +212,7 @@ def import_list_of_ips_from_scan():
     return ip_list
 
 def ping_device(ip, count=1):
-    """ Pings an IP address """
+    """ Pings an IP address. If pingable, a True is returned. Otherwise a False is returned """
     try:
         logger.info(f'Pinging device {ip}')
         response = os.system(f"ping -c {count} {ip}")
@@ -311,7 +321,7 @@ def scan_network():
         print(exc_msg)
 
 def get_public_addresses_from_config_file():
-    """ Pull in Public IP addresses from the configuration file and return them as a list """
+    """ Pull in Public IP addresses (e.g. Google, CloudFlare) from the configuration file and return them as a list """
     try:
         public_addresses = c["public_addresses"]
         public_ip_list = [public_addresses[key] for key in public_addresses]
@@ -333,26 +343,28 @@ def is_internet_up(threshold):
         print(exc_msg)
 
 def analyze_historical_network_detection(records_to_look_back, threshold, test_mode):
+    """ 
+    Using a threshold and counting how many devices were found over time, decide if 
+    one should be suspicious should a dip be detected in the number of devices
+    on the LAN
+    """
     try:
         # Read the data from the file
         with open('network_device_history.txt', 'r') as file:
             reader = csv.reader(file)
             data = [int(row[1]) for row in reader]
-            rows = list(reader)
-
-
-        # Calculate the average of the last 10 values in the second column
-        average_last_10 = float(sum(data[-records_to_look_back:]) / records_to_look_back)
+        # Calculate the average of the last n values in the second column
+        average_n_values = float(sum(data[-records_to_look_back:]) / records_to_look_back)
         if test_mode == True:
             latest_discovered_devices = c["run_mode"]["test_mode_discovered_devices"]
         elif test_mode == False:
             latest_discovered_devices = data[-1]
 
-        # If the latest number of discovered devices is less than 50% of the historical average,
+        # If the latest number of discovered devices is less than a certain percentantage of the historical average,
         # be suspicious
 
-        threshold_trigger = float(average_last_10 * threshold)
-        print(f'-- Average number of devices detected in the last 10 runs: {average_last_10}')
+        threshold_trigger = float(average_n_values * threshold)
+        print(f'-- Average number of devices detected in the last {records_to_look_back} runs: {average_n_values}')
         print(f'-- Last record: {latest_discovered_devices}')
         print(f'-- Threshold Trigger {threshold_trigger} with a threshold multiplier of {threshold*100}%')
 
@@ -443,5 +455,3 @@ if __name__ == "__main__":
         logger.info(f"----- Run {x} -----")
         time.sleep(5)
         x += 1
-    
-    

@@ -188,9 +188,9 @@ def check_of_ssh_device_available():
         rsa_path = c["linux_servers"]["heartbeat_server"]["rsa_path"]
         ssh_heartbeat_server = ssh_login(host, username, rsa_path)
         if ssh_heartbeat_server == True:
-            return 'Online'
+            return 'Available'
         else:
-            return 'Offline'
+            return 'Not Available'
     except Exception as e:
         exc_msg = f'Issue running check_of_ssh_device_available(): {e}'
         logger.error(exc_msg)
@@ -440,7 +440,7 @@ def main():
     print(start_msg)
     initialize()
     if monitor_power_outage_device() == 'Offline':
-        if check_of_ssh_device_available() == False:
+        if check_of_ssh_device_available() == 'Not Available':
             scan_network()
             save_network_device_history_to_disk()
             decide_if_shutdown_should_occur()
